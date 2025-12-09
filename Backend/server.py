@@ -2,7 +2,7 @@ import socketio
 from socketio import ASGIApp
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-#from db import DB
+from db import DB
 
 
 sio = socketio.AsyncServer(
@@ -21,11 +21,12 @@ app.add_middleware(
 
 socket_app = ASGIApp(sio, other_asgi_app=app)
 
-'''
-mongo = DB("HH")
+
+mongo = DB()
 db = mongo.get_db()
 
-'''
+if hasattr(db,"db"):
+    print("ok")
 
 @sio.event
 async def Ask(sid, data=None):
