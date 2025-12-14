@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from db import DB
 
+from Graph.Graph import Graph
 
 sio = socketio.AsyncServer(
     cors_allowed_origins='*',
@@ -28,6 +29,10 @@ db = mongo.get_db()
 if hasattr(db,"db"):
     print("ok")
 
+
+s = Graph()
+
+
 @sio.event
 async def Ask(sid, data=None):
     print("From user:", data)
@@ -37,6 +42,8 @@ async def Ask(sid, data=None):
         "user": "Himasha",
         "content": "hello",
     }
+
+
 
     # ✅ reply ONLY to this user
     await sio.emit("reply", msg, to=sid)
