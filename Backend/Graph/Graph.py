@@ -18,9 +18,6 @@ def Graph():
     ragAgent = RagAgent("rag_agent")
 
 
-
-
-
     input_state: State = {
     "messages": [HumanMessage(content="Tell me about AI models")],
     "user_query": "Tell me about AI models",

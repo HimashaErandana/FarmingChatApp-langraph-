@@ -1,6 +1,8 @@
 const Msg = ({content}) => {
     
     console.log("from smg",content)
+
+    
     const name = content["user"]
     const con = content["content"]
     const n = name.charAt(0)

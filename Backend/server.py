@@ -30,7 +30,6 @@ if hasattr(db,"db"):
     print("ok")
 
 
-s = Graph()
 
 
 @sio.event
@@ -43,6 +42,8 @@ async def Ask(sid, data=None):
         "content": "hello",
     }
 
+    
+    s = Graph()
 
 
     # ✅ reply ONLY to this user
