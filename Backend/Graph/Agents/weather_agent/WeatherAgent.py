@@ -1,8 +1,8 @@
 from ..BaseAgent import BaseAgent
 import httpx
-
+from services.llm_service import invoke_llm
 from pydantic import BaseModel
-
+from config import OPENWEATHER_API_KEY
 class Weather(BaseModel):
     city: str
     country: str
@@ -17,17 +17,20 @@ class Weather(BaseModel):
 
 class WeatherAgent(BaseAgent):
 
-    url = "https://api.openweathermap.org/data/2.5/weather?q=kandy&appid=3dca038969f319eb781a0c0fa3bc9899&units=metric"
 
-    async def call(self,state) -> Weather:
+    def call(self,q) -> Weather:
 
-        q = state['user_query']
-
+        city = invoke_llm(f"from this qustion only exytract the name of the city and only retun it to me no other content {q}")
+        
         '''call llm here to extract the city and day using query'''
 
-        async with httpx.AsyncClient as client:
-            api_response = await client.get(self.url)
+        api_key = OPENWEATHER_API_KEY
 
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+
+        res = httpx.get(url)
+        api_response = res.json()
+        print(api_response)
         weather = Weather(
         city=api_response.get("name"),
         country=api_response.get("sys", {}).get("country"),
@@ -40,4 +43,6 @@ class WeatherAgent(BaseAgent):
         alert=""  # you can fill this later if you have alert info
         )
 
-        return weather
+        #llm_res = invoke_llm(f"use this weather obj {weather.model_dump_json()} and asnwer this question {q}")
+       
+        return weather.model_dump_json()

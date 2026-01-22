@@ -1,39 +1,92 @@
 import Msg from "./message";
-import socket from "../services/socket" 
+//import socket from "../services/socket" 
 import { useEffect,useState } from "react";
+import axios from 'axios'
 
 const Chat = () => {  
   
 
   const data = { "user": "Himasha", "content": "hello" }
   
+ 
+
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+
+    useEffect(()=>{
+      const get_messages = async() =>{
+        try {
+        const res = await axios.get("http://127.0.0.1:8000/all_messages");
+        console.log(res.data)
+        setMessages(res.data); 
+      } catch (err) {
+        console.error("fetch messages failed:", err);
+      }
+      }
+
+      get_messages()
+  },[]);
   
-  const [message, setMessages] = useState([]);
-  
-    useEffect(() => {
-      
-      // handler for "reply" event
-      const handleReply = (msg) => {
-        console.log("Received message:", msg); 
-        
-        // append new message to state
-         setMessages(prev => [...prev, msg]);
-      };
-
-      socket.off("reply", handleReply);
-
-      // listen to "reply" event
-      socket.on("reply", handleReply);
 
 
-      socket.emit("Ask",data);
-      // cleanup on unmount
-      return () => {
-        socket.off("reply", handleReply);
-      };
-    }, []);
+    const sendMessage = async () => {
+      if (!input.trim()) return;
+      console.log("ran")
+      try {
+        const res = await axios.post("http://127.0.0.1:8000/ask_temp", {
+          message: input
+        });
+        console.log(res.data)
+        //setMessages((prev) => [...prev, res.data.content]);
+        setInput("");
+      } catch (err) {
+        console.error("Send message failed:", err);
+      }
+    };
+
 
    
+     /*
+
+    socket.on("reply", handleReply);
+
+    // emit only when connected
+    const onConnect = () => {
+      console.log("Socket connected:", socket.id);
+      socket.emit("Ask", { user: "Himasha", content: "hello" });
+    };
+
+    if (!socket.connected) {
+      socket.connect();       // start connection
+      socket.on("connect", onConnect);
+    } else {
+      socket.emit("Ask", { user: "Himasha", content: "hello" });
+    }
+
+    return () => {
+      socket.off("reply", handleReply);
+      socket.off("connect", onConnect);
+    };
+  }, []);
+
+  useEffect(()=>{
+
+    socket.on('connect',()=>{
+      setIsConnected(socket.connected)
+    })
+
+      socket.on('disconnect',()=>{
+      setIsConnected(socket.connected)
+    })
+
+
+  }
+  )*/
+   
+
+
+  
+
 
 
     return ( 
@@ -104,9 +157,14 @@ const Chat = () => {
                     
                     
                     
-                    {message.map((msg, index) => (
-                      <Msg key={index} content={msg} />
+                    {messages.map((msg, index) => (
+                      <Msg key={msg._id} content={msg} />
                     ))}
+
+
+                  
+                   
+
                    
                     
                     
@@ -120,7 +178,7 @@ const Chat = () => {
 
               <div className="flex flex-row items-center h-16 rounded-xl bg-white w-full px-4">
                 <div>
-                  <button className="flex items-center justify-center text-gray-400 hover:text-gray-600">
+                  <button className="flex items-center justify-center text-gray-400 hover:text-gray-600" >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path
                         strokeLinecap="round"
@@ -134,7 +192,12 @@ const Chat = () => {
 
                 <div className="flex-grow ml-4">
                   <div className="relative w-full">
-                    <input type="text" className="flex w-full border rounded-xl focus:outline-none focus:border-green-300 pl-4 h-10" />
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      className="flex w-full border rounded-xl focus:outline-none focus:border-green-300 pl-4 h-10"
+                    />
                     <button className="absolute flex items-center justify-center h-full w-12 right-0 top-0 text-gray-400 hover:text-gray-600">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path
@@ -149,7 +212,7 @@ const Chat = () => {
                 </div>
 
                 <div className="ml-4">
-                  <button className="flex items-center justify-center bg-green-500 hover:bg-green-600 rounded-xl text-white px-4 py-1 flex-shrink-0">
+                  <button className="flex items-center justify-center bg-green-500 hover:bg-green-600 rounded-xl text-white px-4 py-1 flex-shrink-0"  onClick={sendMessage}>
                     <span>Send</span>
                     <span className="ml-2">
                       <svg

@@ -2,97 +2,126 @@ from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 #from langgraph.checkpoint.mongodb import MongoDBSaver
 from langgraph.checkpoint.memory import MemorySaver
-
+from services.llm_service import invoke_llm
 from Graph.MessageState import State
 
 #Agent imports
-from Graph.Agents.Rag_agent.RagAgent import RagAgent
+#from Graph.Agents.Rag_agent.RagAgent import RagAgent
 from Graph.Agents.weather_agent.WeatherAgent import WeatherAgent
 from Graph.Agents.WebScraper_agent.WebScraperAgent import WebScraper
 from Graph.Agents.Decease_agent.DeaseceAgent import DeseaceAgent
+import requests
 
-def Graph():
+class Graph:
+    def __init__(self):
+        #self.deseaceAgent = DeseaceAgent()
+        self.weatherAgent = WeatherAgent('weather')
+        self.deceaseAgent = DeseaceAgent()
 
-    deseaceAgent = DeseaceAgent("deseace_agent")
-    weatherAgent = WeatherAgent("weather_agent")
-    ragAgent = RagAgent("rag_agent")
+        self.graph = self.build()
 
 
-    input_state: State = {
-    "messages": [HumanMessage(content="Tell me about AI models")],
-    "user_query": "Tell me about AI models",
-    "query_type": "",
-    "agent_output": "",
-    "final_answer": ""
-    }
 
-    def Router(state:State):
-        msg = state['messages'][-1].content.lower()
 
-        if 'weather' in msg:
-            out = 'api'
-        elif "disease" in msg:
-            out = "cnn"
-        else:
-            out = "rag"
-        return {"query_type": out}
+    def Router(self,state:State):
+            
+            msg = state["messages"][-1].content.lower()
+
+            #qType = invoke_llm(f"using this {msg} give me an exact type this message belongs wether it belongs to api: means weather or cnn : means disease or rag: rag means if it doenst belong to ther two categories just guve me the type ")
+
+            if 'weather' in msg:
+                out = 'api'
+            elif "disease" in msg:
+                out = "cnn"
+            else:
+                out = "rag"
+
+            return {"query_type": out}
+
+        
+    def rag_node(self,state: State):
+        q = state["messages"][-1].content
+
+        payload = {f"query": q}
+        url = "http://127.0.0.1:8801/call_rag"
+        result = requests.post(url, json=payload)
+        return {"agent_output": result.json()}
+
+    def api_node(self,state: State):
+        q = state["messages"][-1].content
+        result =  self.weatherAgent.call(q)
+        #result = f"weather running  :: coutry{result.city}condition{result.condition}feels like{result.feels_like}"
+        return {"agent_output": result}
 
     
-    def rag_node(state: State):
-        q = state["user_query"]
-        result = ragAgent.call(q)
+    def cnn_node(self,state: State):
+        q = state["messages"][-1].content
+        result = self.deceaseAgent.call("aa")
         return {"agent_output": result}
 
-    def api_node(state: State):
-        q = state["user_query"]
-        result = weatherAgent.call(q)
-        return {"agent_output": result}
+    def summarizer_node(self,state:State):
+        q = state["messages"][-1].content
+        result = invoke_llm(f"act as a summarizer give me a suitble answer for the question {q} , use this contnet for this {state['agent_output']} ")
+        
+        return {
+            "messages": state["messages"] + [AIMessage(content=result)]
+        }
+
+
+    def build(self):
+        builder = StateGraph(State)
+
+        builder.add_node("Router", self.Router)
+        builder.add_node("rag", self.rag_node)
+        builder.add_node("api", self.api_node)
+        builder.add_node("cnn", self.cnn_node)
+        builder.add_node("summarizer", self.summarizer_node)
+
+        builder.add_edge(START, "Router")
+
+        builder.add_conditional_edges(
+            "Router",
+            lambda s: s["query_type"],
+            {"rag": "rag", "api": "api", "cnn": "cnn"}
+        )
+
+        builder.add_edge("rag", "summarizer")
+        builder.add_edge("api", "summarizer")
+        builder.add_edge("cnn", "summarizer")
+        builder.add_edge("summarizer", END)
+
+        '''checkpointer = MongoDBSaver(
+            uri="mongodb+srv://himashaerandana1234_db_user:WYVXpjfRGIgdZbGY@cluster0.bopzoec.mongodb.net/?appName=Cluster0",
+            db_name="Cluster0",
+            collection_name="checkpoints_demo"
+        )
+    '''
+
+        return builder.compile(checkpointer=MemorySaver())
+
+
+
+    def invoke(self,input:str) -> str:
+
+       
+        '''''
+        input_state = {
+            "messages": [HumanMessage(content=input)],
+            "user_query": input
+        }'''
+
+        result = self.graph.invoke({"messages": [HumanMessage(content=input)]}, config={"configurable": {"thread_id": "user_123"}})
+
+        #input_state['messages'].append(AIMessage(content=result))
+
+        return result["messages"][-1].content
+
+
+graph_instance = Graph() 
+
+def invoke_graph(input:str) -> str:
+    res = graph_instance.invoke(input=input)
+    return res
 
     
-    def cnn_node(state: State):
-        q = state["user_query"]
-        result = deseaceAgent.call(q)
-        return {"agent_output": result}
-
-    def summarizer_node(state:State):
-        result = f"summarized for{state['agent_output']} "
-        return {"messages": [AIMessage(content=result)]}
-
-    builder = StateGraph(State)
-    builder.add_node("Router", Router)
-    builder.add_node("rag", rag_node)
-    builder.add_node("api", api_node)
-    builder.add_node("cnn", cnn_node)
-    builder.add_node("summarizer",summarizer_node)
-
-    # Edges
-    builder.add_edge(START, "Router")
-
-    builder.add_conditional_edges(
-        "Router",
-        lambda s: s["query_type"],
-        {
-            "rag": "rag",
-            "api": "api",
-            "cnn": "cnn",
-        },
-    )
-
-    builder.add_edge("rag", "summarizer")
-    builder.add_edge("api", "summarizer")
-    builder.add_edge("cnn", "summarizer")
-
-    builder.add_edge( "summarizer",END)
-
-
-    '''checkpointer = MongoDBSaver(
-        uri="mongodb+srv://himashaerandana1234_db_user:WYVXpjfRGIgdZbGY@cluster0.bopzoec.mongodb.net/?appName=Cluster0",
-        db_name="Cluster0",
-        collection_name="checkpoints_demo"
-    )
-'''
-    checkpointer = MemorySaver()  # 🔹 Use memory saver for testing
-    graph = builder.compile(checkpointer=checkpointer)
-
-    result = graph.invoke(input_state, config={"configurable": {"thread_id": "user_123"}})
-    return result
+    
