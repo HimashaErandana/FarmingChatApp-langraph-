@@ -108,6 +108,8 @@ const Chat = () => {
 
       window.alert("file uploaded")
 
+      setPendingFile(null)
+      fileInputRef.current.value = "";
       }catch(err){
         console.error("Image upload failed:", err);
       }
