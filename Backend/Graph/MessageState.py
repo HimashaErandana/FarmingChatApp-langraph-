@@ -1,4 +1,4 @@
-from typing import List, TypedDict, Annotated
+from typing import List, TypedDict, Annotated,NotRequired
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
 class State(TypedDict):
@@ -6,3 +6,4 @@ class State(TypedDict):
         query_type: str  
         agent_output: str
         final_answer: str
+        img_url: NotRequired[str]

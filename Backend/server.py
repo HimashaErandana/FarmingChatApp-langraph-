@@ -1,6 +1,6 @@
 import socketio
 from socketio import ASGIApp
-from fastapi import FastAPI,HTTPException, Depends
+from fastapi import FastAPI,HTTPException, Depends,UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from db import DB
 from services.Messages.message_services import message
@@ -8,6 +8,10 @@ from services.Messages.message_services import get_all_messages
 from VectorDB.vectorizer import Vcetorizer
 from Graph.Graph import invoke_graph
 from bson import ObjectId
+from typing import Optional
+import os
+from datetime import datetime
+import shutil  
 
 from Graph.Graph import Graph
 
@@ -49,6 +53,38 @@ async def ask(req:AskRequest):
     res = await message(req.message)
     
     return  res
+
+
+
+
+UPLOAD_DIR = "D:\My projects\Agentic AI\Srilankan Rice farming field solutions\code\original\Backend\images"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+@app.post('/ask_i')
+async def aski(
+    msg:str = Form(...),
+    image:Optional[UploadFile] = File(None)
+):
+    req = AskRequest(message=msg)
+    image_link=None
+    if(image):
+        print(image.filename)
+        # Create a unique filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"{timestamp}_{image.filename}"
+        filepath = os.path.join(UPLOAD_DIR, filename)
+
+        # Save file locally
+        with open(filepath, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+
+        image_link = f"/{UPLOAD_DIR}/{filename}"
+        print("Saved file:", filepath)
+
+    res = await invoke_graph(req.message,image_link)    
+
+
 
 @app.post('/askg')
 async def askg(req:AskRequest):

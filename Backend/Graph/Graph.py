@@ -101,16 +101,21 @@ class Graph:
 
 
 
-    def invoke(self,input:str) -> str:
+    def invoke(self,input:str,img_url:str = None) -> str:
 
        
-        '''''
+        
         input_state = {
             "messages": [HumanMessage(content=input)],
-            "user_query": input
-        }'''
+            "img_url": img_url
+        }
 
-        result = self.graph.invoke({"messages": [HumanMessage(content=input)]}, config={"configurable": {"thread_id": "user_123"}})
+        result = self.graph.invoke(
+            input_state,
+            config={"configurable": {"thread_id": "user_123"}}
+        )
+
+        #result = self.graph.invoke({"messages": [HumanMessage(content=input)]}, config={"configurable": {"thread_id": "user_123"}})
 
         #input_state['messages'].append(AIMessage(content=result))
 
@@ -119,7 +124,7 @@ class Graph:
 
 graph_instance = Graph() 
 
-def invoke_graph(input:str) -> str:
+def invoke_graph(input:str,img_url:str) -> str:
     res = graph_instance.invoke(input=input)
     return res
 

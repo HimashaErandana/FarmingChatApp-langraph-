@@ -20,3 +20,6 @@ __pycache__/
 *.h5
 *.pt
 *.pth
+# Environment / Secrets
+.env
+Backend/.env
