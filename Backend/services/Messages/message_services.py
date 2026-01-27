@@ -21,7 +21,7 @@ class Message_services:
         if(user_msg):
             print("u created")
 
-        await self.mongo_services.create_msg(user_msg)
+        u_msg = await self.mongo_services.create_msg(user_msg)
 
         print("did it ")
 
@@ -35,7 +35,7 @@ class Message_services:
         crated = await self.mongo_services.create_msg(ai_msg)
         print(crated)
         print("ai msg",ai_msg)
-        return ai_msg
+        return [u_msg,ai_msg]
 
     async def get_all(self):
         messages = await self.mongo_services.get_all()

@@ -1,14 +1,23 @@
 import socketio
 from socketio import ASGIApp
-from fastapi import FastAPI
+from fastapi import FastAPI,HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from db import DB
-from services.message_services import message
-from services.message_services import get_all_messages
+from services.Messages.message_services import message
+from services.Messages.message_services import get_all_messages
 from VectorDB.vectorizer import Vcetorizer
 from Graph.Graph import invoke_graph
+from bson import ObjectId
 
 from Graph.Graph import Graph
+
+
+from services.Auth.modles import UserSigup,UserLogin,Token
+from services.Auth.auth import hash_pw,verify_pw,create_access_token,get_current_user
+
+from services.User.model import UserCreate,UserOut
+from services.User.UserServices import UserService
+
 
 '''''
 sio = socketio.AsyncServer(
@@ -38,8 +47,8 @@ class AskRequest(BaseModel):
 async def ask(req:AskRequest):
     print(req.message)
     res = await message(req.message)
-    print(res)
-    return res
+    
+    return  res
 
 @app.post('/askg')
 async def askg(req:AskRequest):
@@ -60,44 +69,64 @@ async def askg(req:AskRequest):
 
 
 @app.get('/all_messages')
-async def gte_all():
+async def gte_all(current_user: str = Depends(get_current_user)):
     return await get_all_messages()
 
 
-@app.get('/allm')
-async def get_all():
-    return [
-        {
-    "name": "AI",
-    "content": f"this reply is dummy "
-    },
-    {
-    "name": "hello",
-    "content": f"this reply is dummy"
-    },
-    {
-    "name": "AI",
-    "content": '''NFO:     Started server process [9716]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     127.0.0.1:52427 - "GET /allm HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52427 - "GET /allm HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51826 - "OPTIONS /ask_temp HTTP/1.1" 200 OK
-h
-INFO:     127.0.0.1:51826 - "POST /ask_temp HTTP/'''
+
+
+
+
+us = UserService()
+@app.post("/signup")
+async def signup(user:UserSigup):
+    created_user = await us.create_users(
+           user
+    )
+    '''
+         name=user.name,
+            email=user.email,
+            password=user.password
+    '''
+    return {"message": f"User created successfully{created_user}"}
+
+
+fake_users_db ={}
+@app.post("/login", response_model=Token)
+async def login(user: UserLogin):
+    db_user = await us.getuser_by_email(user.email)
+    print(db_user)
+    if not db_user or not verify_pw(user.password, db_user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_access_token(user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer"
     }
-    ,{
-    "name": "nimal",
-    "content": f"this reply is dummy"
+
+
+@app.get("/profile")
+async def profile(current_user: dict = Depends(get_current_user)):
+    print(current_user)
+    return current_user
+
+
+@app.post("/create_u")
+async def create(user:UserCreate, response_model=UserOut):
+     db_instance = DB()  # singleton instance
+     users_col = db_instance.get_collection("users")
+     result = await users_col.insert_one({
+        "name": user.name,
+        "email": user.email,
+        "password": hash_pw(user.password)  # hashed password
+    })
+     
+     return {
+        "id": str(result.inserted_id),  # convert ObjectId to string
+        "name": user.name,
+        "email": user.email
     }
-]
-
-
-@app.get('/ask')
-async def ask():
-
-    return "hello there"
-
 
 mongo = DB()
 db = mongo.get_db()

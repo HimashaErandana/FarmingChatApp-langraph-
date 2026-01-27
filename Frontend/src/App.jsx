@@ -1,7 +1,10 @@
-
 import './App.css'
-import Chat from './components/chat'
-import Dummy from './components/dummy'
+import Login from './pages/Login'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Chat from './pages/chat';
+import ProtectedRoute from './Auth/ProtectedRoute';
+import { AuthProvider } from './Auth/AuthContext';
+import Signup from './pages/Signup';
 
 
 function App() {
@@ -9,7 +12,23 @@ function App() {
 
   return (
     
-    <Chat/>
+   <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />  
+          
+          <Route
+            path="/Chat"
+            element={
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
 
   )
 }
