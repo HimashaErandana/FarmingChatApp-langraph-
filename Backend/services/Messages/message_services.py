@@ -8,14 +8,15 @@ class Message_services:
         self.mongo_services = MongoDB_services()
 
 
-    async def message(self,msg):
+    async def message(self,msg,filepath:str=None,img_url:str=None):
 
         print("msh services")
         
 
         user_msg = MessageModel(
             message=msg,
-            msgType="USER"
+            msgType="USER",
+            img_url=img_url
         )
 
         if(user_msg):
@@ -25,7 +26,7 @@ class Message_services:
 
         print("did it ")
 
-        res = invoke_graph(msg)
+        res = invoke_graph(msg,filepath)
 
         ai_msg = MessageModel(
             message=res,
@@ -43,7 +44,8 @@ class Message_services:
             {
                 "id": str(m.id),
                 "message": m.message,
-                "msgType": m.msgType
+                "msgType": m.msgType,
+                "img_url":m.img_url
             }
             for m in messages
         ]
@@ -51,8 +53,8 @@ class Message_services:
 
 message_services = Message_services()
 
-async def message(msg) -> str:
-    return await message_services.message(msg)
+async def message(msg,filepath:str=None,img_url:str=None) -> str:
+    return await message_services.message(msg,filepath,img_url)
 
 
 async def get_all_messages():

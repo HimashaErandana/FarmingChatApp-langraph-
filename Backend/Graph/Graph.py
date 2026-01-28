@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langgraph.checkpoint.memory import MemorySaver
 from services.llm_service import invoke_llm
 from Graph.MessageState import State
-
+from typing import Optional
 #Agent imports
 #from Graph.Agents.Rag_agent.RagAgent import RagAgent
 from Graph.Agents.weather_agent.WeatherAgent import WeatherAgent
@@ -56,7 +56,7 @@ class Graph:
     
     def cnn_node(self,state: State):
         q = state["messages"][-1].content
-        result = self.deceaseAgent.call("aa")
+        result = self.deceaseAgent.call(state["img_url"])
         return {"agent_output": result}
 
     def summarizer_node(self,state:State):
@@ -124,8 +124,8 @@ class Graph:
 
 graph_instance = Graph() 
 
-def invoke_graph(input:str,img_url:str) -> str:
-    res = graph_instance.invoke(input=input)
+def invoke_graph(input:str,img_url:str = None) -> str:
+    res = graph_instance.invoke(input=input,img_url=img_url)
     return res
 
     

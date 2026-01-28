@@ -12,7 +12,7 @@ from typing import Optional
 import os
 from datetime import datetime
 import shutil  
-
+from fastapi.staticfiles import StaticFiles
 from Graph.Graph import Graph
 
 
@@ -57,9 +57,14 @@ async def ask(req:AskRequest):
 
 
 
-UPLOAD_DIR = "D:\My projects\Agentic AI\Srilankan Rice farming field solutions\code\original\Backend\images"
+
+UPLOAD_DIR = "Backend/images"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
+
+
+app.mount("/images", StaticFiles(directory=UPLOAD_DIR), name="images")
 
 @app.post('/ask_i')
 async def aski(
@@ -79,10 +84,12 @@ async def aski(
         with open(filepath, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
-        image_link = f"/{UPLOAD_DIR}/{filename}"
+        image_link = f"/images/{filename}"
         print("Saved file:", filepath)
 
-    res = await invoke_graph(req.message,image_link)    
+    res = await message(req.message,filepath,image_link)
+
+    return res    
 
 
 

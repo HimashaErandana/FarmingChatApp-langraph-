@@ -20,6 +20,9 @@ class LLM:
 llm = LLM()
 
 def invoke_llm(prompt:str) -> str:
-    res = llm.call_llm(prompt=prompt)
-    clean_text = res.encode('utf-8').decode('unicode_escape')
+    '''res = llm.call_llm(prompt=prompt)
+    clean_text = res.encode('utf-8').decode('unicode_escape')'''
+
+    clean_text = f"dummy{prompt}"
+
     return clean_text

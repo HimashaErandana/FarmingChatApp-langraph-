@@ -43,7 +43,8 @@ class MessageModel(BaseModel):
     # Make _id optional, default to None, Pydantic alias _id
     id: Optional[str] = Field(default=None, alias="_id")  
     message: str
-    msgType: str  # "user" or "AI"
+    msgType: str # "user" or "AI"
+    img_url: Optional[str] = None 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     model_config = ConfigDict(

@@ -8,6 +8,6 @@ class DeseaceAgent(BaseAgent):
 
     def call(self,img_url):
         path = 'D:\My projects\Agentic AI\Srilankan Rice farming field solutions\code\original\Bacterial Leaf Blight.jpg'
-        pred = self.service.getService(path)
+        pred = self.service.getService(img_url)
         print(pred)
-        return "img - slaight bloght"
+        return pred

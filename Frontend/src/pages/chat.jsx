@@ -75,7 +75,7 @@ const Chat = () => {
 
   const [pendingFile, setPendingFile] = useState(null);
   const fileInputRef = useRef(null);
-
+  
 
     const handleUpload = () =>{
       fileInputRef.current.click();
@@ -90,24 +90,33 @@ const Chat = () => {
       setPendingFile(file);
     }
 
-    const sendImage = async() =>{
+    const sendmsg = async() =>{
 
-      if(!pendingFile) return;
-
-      
+      if (!input.trim()) {
+        window.alert("please input a message")
+        return;
+      }
 
       const formdata = new FormData()
-      formdata.append("image",pendingFile)
+      formdata.append("msg", input);
+
+      if(pendingFile){
+        formdata.append("image",pendingFile)
+      }
+      
 
       try{
-        const res = await api.post("/upload-image", formdata,{
+        const res = await api.post("/ask_i", formdata,{
             headers: {
           "Content-Type": "multipart/form-data",
           },
         })
 
-      window.alert("file uploaded")
+      setMessages((prev) => [...prev, ...res.data]);
+      setInput("");
 
+      
+     
       setPendingFile(null)
       fileInputRef.current.value = "";
       }catch(err){
@@ -193,45 +202,55 @@ const Chat = () => {
   <div className="ml-2 font-bold text-2xl text-gray-800">QuickChat</div>
 </div>
 
-<div className="flex flex-col mt-8">
-  <button className="flex flex-row items-center hover:bg-emerald-50 rounded-xl p-2 transition-colors duration-200">
-    <div className="ml-2 text-sm font-semibold text-emerald-700">New Chat</div>
+
+
+<div className="flex flex-col mt-8 bg-gradient-to-b from-emerald-50 to-green-50 rounded-2xl p-4 shadow-lg border border-green-100">
+  <button className="flex flex-row items-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+    </svg>
+    <div className="ml-2 text-sm font-bold text-white tracking-wide uppercase">New Chat</div>
   </button>
 
-  <div className="flex flex-col space-y-1 mt-4 -mx-2 h-140 overflow-y-auto">
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Henry Boyd</div>
+  <div className="flex flex-col space-y-2 mt-4 -mx-2 h-48 overflow-y-auto pr-2">
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Henry Boyd</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Marta Curtis</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Marta Curtis</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Philip Tucker</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Philip Tucker</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Christine Reid</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Christine Reid</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Jerry Guzman</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Jerry Guzman</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Russell Williams</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Russell Williams</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Elizabeth Garcia</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Elizabeth Garcia</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Bruce Reid</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Bruce Reid</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">Louis Crawford</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Louis Crawford</div>
     </button>
-    <button className="flex flex-row items-center hover:bg-gray-50 rounded-xl p-2 transition-colors duration-200">
-      <div className="ml-2 text-sm font-semibold text-gray-700">{
-        pendingFile?
-        <div>yes</div>:<div>no</div>
-        
-        }</div>
+    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
+      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">
+        {pendingFile ? (
+          <div className="flex items-center space-x-2">
+            <span className="text-emerald-600 font-bold animate-pulse">Uploading...</span>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-emerald-600 border-t-transparent"></div>
+          </div>
+        ) : (
+          <div className="text-gray-600 font-medium">No pending files</div>
+        )}
+      </div>
     </button>
   </div>
 </div>
@@ -257,9 +276,12 @@ const Chat = () => {
                     
                     
                     {messages.map((msg, index) => (
-                      <Msg key={msg._id} content={msg} />
+                      <Msg key={msg._id} content={msg} 
+                      img={msg.img_url ? `http://localhost:8000${msg.img_url}` : null}  />
                     ))}
 
+                  
+                     
 
                   
                    
@@ -358,7 +380,7 @@ const Chat = () => {
                 </div>
 
                 <div className="ml-4 ">
-                  <button className="flex items-center justify-center bg-emerald-600 hover:bg-green-700 rounded-xl text-white px-4 py-1 flex-shrink-0"  onClick={sendMessage}>
+                  <button className="flex items-center justify-center bg-emerald-600 hover:bg-green-700 rounded-xl text-white px-4 py-1 flex-shrink-0"  onClick={sendmsg}>
                     <span>Send</span>
                     <span className="ml-2">
                       <svg
