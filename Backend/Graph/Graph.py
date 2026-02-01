@@ -1,7 +1,13 @@
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 #from langgraph.checkpoint.mongodb import MongoDBSaver
-from langgraph.checkpoint.memory import MemorySaver
+#from langgraph.checkpoint.memory import MemorySaver
+
+from langgraph.checkpoint.mongodb import MongoDBSaver
+from pymongo import MongoClient
+from config import MONGO_URL
+
+
 from services.llm_service import invoke_llm
 from Graph.MessageState import State
 from typing import Optional
@@ -27,15 +33,20 @@ class Graph:
             
             msg = state["messages"][-1].content.lower()
 
-            #qType = invoke_llm(f"using this {msg} give me an exact type this message belongs wether it belongs to api: means weather or cnn : means disease or rag: rag means if it doenst belong to ther two categories just guve me the type ")
-
-            if 'weather' in msg:
-                out = 'api'
-            elif "disease" in msg:
-                out = "cnn"
-            else:
+            greeting_keywords = [
+    "hi","hello","hey","hi there","good morning","good afternoon","good evening",
+    "how are you","how's it going","what's up","nice to meet you","good to see you",
+    "bye","goodbye","see you later","take care","thanks","thank you"
+]
+            if "decease" in msg:
+                out = 'cnn'
+            elif 'weather' in msg:
+                out = "api"
+            elif msg.strip() in greeting_keywords:
+                out = "greeting"
+            else :
                 out = "rag"
-
+            
             return {"query_type": out}
 
         
@@ -61,12 +72,42 @@ class Graph:
 
     def summarizer_node(self,state:State):
         q = state["messages"][-1].content
-        result = invoke_llm(f"act as a summarizer give me a suitble answer for the question {q} , use this contnet for this {state['agent_output']} ")
         
+        if state["query_type"] != "cnn":
+            result = invoke_llm(
+                                f"""
+                You are an assistant that summarizes information.
+
+                Task:
+                Read the following content and generate a clear, concise, and relevant answer to the user's question.
+
+                User question: "{q}"
+                Content to use: "{state['agent_output']}"
+
+                Guidelines:
+                - If the content is about a rice disease, return only the **name of the disease**. 
+                - Otherwise, base your answer only on the provided content. Do not add external information.  
+                - Keep the answer concise and easy to understand.  
+                - Respond in a complete sentence suitable for the user.  
+                - Do not repeat the content verbatim; summarize meaningfully.
+
+                Provide only the answer.
+                """)
+        else:
+            result = str(state["agent_output"] )       
+                        
         return {
             "messages": state["messages"] + [AIMessage(content=result)]
         }
 
+    def greeting_node(self, state: State):
+        msg = state["messages"][-1].content
+        res = invoke_llm(f"Respond politely to this greeting: '{msg}'. Keep it short and friendly.")
+        return {
+            "messages": state["messages"] + [
+                AIMessage(content=res)
+            ]
+        }
 
     def build(self):
         builder = StateGraph(State)
@@ -75,6 +116,7 @@ class Graph:
         builder.add_node("rag", self.rag_node)
         builder.add_node("api", self.api_node)
         builder.add_node("cnn", self.cnn_node)
+        builder.add_node("greeting", self.greeting_node)
         builder.add_node("summarizer", self.summarizer_node)
 
         builder.add_edge(START, "Router")
@@ -82,26 +124,29 @@ class Graph:
         builder.add_conditional_edges(
             "Router",
             lambda s: s["query_type"],
-            {"rag": "rag", "api": "api", "cnn": "cnn"}
+            {"greeting": "greeting","rag": "rag", "api": "api", "cnn": "cnn"}
         )
 
         builder.add_edge("rag", "summarizer")
         builder.add_edge("api", "summarizer")
         builder.add_edge("cnn", "summarizer")
+        builder.add_edge("greeting", END)
         builder.add_edge("summarizer", END)
 
-        '''checkpointer = MongoDBSaver(
-            uri="mongodb+srv://himashaerandana1234_db_user:WYVXpjfRGIgdZbGY@cluster0.bopzoec.mongodb.net/?appName=Cluster0",
+
+        client = MongoClient(MONGO_URL)
+        Checkpointer = MongoDBSaver(
+            client=client,
             db_name="Cluster0",
-            collection_name="checkpoints_demo"
+            collection_name="checkpoints"
         )
-    '''
+    
 
-        return builder.compile(checkpointer=MemorySaver())
+        return builder.compile(checkpointer=Checkpointer)
 
 
 
-    def invoke(self,input:str,img_url:str = None) -> str:
+    def invoke(self,input:str,cid:str,img_url:str = None) -> str:
 
        
         
@@ -112,7 +157,7 @@ class Graph:
 
         result = self.graph.invoke(
             input_state,
-            config={"configurable": {"thread_id": "user_123"}}
+            config={"configurable": {"thread_id": cid}}
         )
 
         #result = self.graph.invoke({"messages": [HumanMessage(content=input)]}, config={"configurable": {"thread_id": "user_123"}})
@@ -124,8 +169,8 @@ class Graph:
 
 graph_instance = Graph() 
 
-def invoke_graph(input:str,img_url:str = None) -> str:
-    res = graph_instance.invoke(input=input,img_url=img_url)
+def invoke_graph(input:str,cid,img_url:str = None) -> str:
+    res = graph_instance.invoke(input=input,cid=cid,img_url=img_url)
     return res
 
     

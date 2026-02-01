@@ -33,9 +33,9 @@ class MongoDB_services:
         return MessageModel(**created_doc)
 
             
-    async def get_all(self) -> List[MessageModel]:
+    async def get_all(self,cid) -> List[MessageModel]:
         messages = []
-        async for msg in self.collection.find():
+        async for msg in self.collection.find({"chat_id":str(cid)}):
             msg["_id"] = str(msg["_id"])
             messages.append(MessageModel(**msg))
         print (messages)    

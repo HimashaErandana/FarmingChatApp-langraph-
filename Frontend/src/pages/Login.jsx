@@ -21,8 +21,9 @@ const Login = () => {
         const token = res.data.access_token;
 
         login(token)
+        console.log("LOGIN RESPONSE:", res.data);
 
-        navigate("/Chat")
+        navigate(`/Chat/${res.data.user_id}`)
 
     }
 

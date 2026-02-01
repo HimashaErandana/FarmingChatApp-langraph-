@@ -1,4 +1,4 @@
-const Msg = ({content,img}) => {
+const Msg = ({content,img,isloading}) => {
     
     console.log("from smg",content.msgType)
 
@@ -30,7 +30,12 @@ const Msg = ({content,img}) => {
                           <div>{text}</div>
                         </div>
                       </div>
-            </div>
+
+
+
+
+                  
+                             </div>
 
            
 

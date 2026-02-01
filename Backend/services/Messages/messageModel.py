@@ -44,7 +44,8 @@ class MessageModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")  
     message: str
     msgType: str # "user" or "AI"
-    img_url: Optional[str] = None 
+    img_url: Optional[str] = None
+    chat_id:str 
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     model_config = ConfigDict(

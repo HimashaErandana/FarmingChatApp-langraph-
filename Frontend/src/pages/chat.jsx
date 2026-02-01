@@ -5,6 +5,7 @@ import axios from 'axios'
 import api from "../Auth/axois";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../Auth/AuthContext";
+import { useParams } from "react-router-dom";
 
 
 const Chat = () => {  
@@ -33,9 +34,52 @@ const Chat = () => {
   //end auth
 
 
+  const {uid} = useParams();
+
   const data = { "user": "Himasha", "content": "hello" }
+
+
+
+
+ //chats
+
+  const [chats,setChats] = useState([]);
+  const [active_chat ,setActive_chat] = useState();
+
+  useEffect(()=>{
+
+    const get_chats = async() =>{
+        try {
+        const res = await api.get(`/get_all_chats/${uid}`);
+        console.log("get all chtas called")
+        setChats(res.data); 
+      } catch (err) {
+        console.error("fetch chats failed:", err);
+      }
+    }
+    get_chats()
+  },[])
+
   
- 
+  const create_chat = async() =>{
+   const res = await api.post('/create_chat',{
+      "userId":uid
+    })
+    setChats((prev) => [...prev, res.data])
+    setActive_chat(res.data)
+    setMessages([])
+  }
+  
+  useEffect(()=>{
+    if(chats.length>0&& !active_chat){
+      setActive_chat(chats[chats.length -1]);
+    }
+  },[chats])
+
+
+
+  
+ //messages
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -44,8 +88,11 @@ const Chat = () => {
 
     useEffect(()=>{
       const get_messages = async() =>{
+        if (!active_chat?.id) return;
+
+        console.log("ciddddd",active_chat.id)
         try {
-        const res = await api.get("/all_messages");
+        const res = await api.get(`/all_messages/${active_chat.id}`);
         console.log(res.data)
         setMessages(res.data); 
       } catch (err) {
@@ -54,10 +101,12 @@ const Chat = () => {
       }
 
       get_messages()
-  },[]);
-  
-  
-    const sendMessage = async () => {
+  },[active_chat]);
+
+
+
+
+      const sendMessage = async () => {
       if (!input.trim()) return;
       console.log("ran")
       try {
@@ -75,7 +124,7 @@ const Chat = () => {
 
   const [pendingFile, setPendingFile] = useState(null);
   const fileInputRef = useRef(null);
-  
+  const [isLoading, setIsloading] = useState(false);
 
     const handleUpload = () =>{
       fileInputRef.current.click();
@@ -91,7 +140,7 @@ const Chat = () => {
     }
 
     const sendmsg = async() =>{
-
+      console.log("cdd",active_chat.id)
       if (!input.trim()) {
         window.alert("please input a message")
         return;
@@ -103,7 +152,15 @@ const Chat = () => {
       if(pendingFile){
         formdata.append("image",pendingFile)
       }
+
+      console.log("active chat =id ",active_chat.id)
+      formdata.append("chat_id",active_chat.id)
       
+      setInput("");
+      setPendingFile(null)
+      fileInputRef.current.value = "";
+
+      setIsloading(true)
 
       try{
         const res = await api.post("/ask_i", formdata,{
@@ -112,17 +169,24 @@ const Chat = () => {
           },
         })
 
+      setIsloading(false)
       setMessages((prev) => [...prev, ...res.data]);
-      setInput("");
-
       
-     
-      setPendingFile(null)
-      fileInputRef.current.value = "";
       }catch(err){
         console.error("Image upload failed:", err);
       }
     }
+
+
+    const messagesEndRef = useRef(null);
+
+    useEffect(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }, [messages]); // scrolls whenever messages update
+
+  
 
    
      /*
@@ -204,54 +268,30 @@ const Chat = () => {
 
 
 
-<div className="flex flex-col mt-8 bg-gradient-to-b from-emerald-50 to-green-50 rounded-2xl p-4 shadow-lg border border-green-100">
-  <button className="flex flex-row items-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+<div className="flex flex-col mt-8 bg-gradient-to-b from-emerald-50 to-green-50 rounded-2xl p-4 shadow-lg border border-green-100" >
+  <button onClick={create_chat} className="flex flex-row items-center bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-xl p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
     </svg>
-    <div className="ml-2 text-sm font-bold text-white tracking-wide uppercase">New Chat</div>
+    <div className="ml-2 text-sm font-bold text-white tracking-wide uppercase" >New Chat</div>
   </button>
 
+
+
   <div className="flex flex-col space-y-2 mt-4 -mx-2 h-48 overflow-y-auto pr-2">
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Henry Boyd</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Marta Curtis</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Philip Tucker</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Christine Reid</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Jerry Guzman</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Russell Williams</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Elizabeth Garcia</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Bruce Reid</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">Louis Crawford</div>
-    </button>
-    <button className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300">
-      <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">
-        {pendingFile ? (
-          <div className="flex items-center space-x-2">
-            <span className="text-emerald-600 font-bold animate-pulse">Uploading...</span>
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-emerald-600 border-t-transparent"></div>
-          </div>
-        ) : (
-          <div className="text-gray-600 font-medium">No pending files</div>
-        )}
-      </div>
-    </button>
+
+ 
+            {[...chats].reverse().map((chat, index) => (
+              <button
+                key={chat.id || index}
+                className="flex flex-row items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl p-3 transition-all duration-200 group border border-transparent hover:border-green-200 hover:shadow-sm focus:outline-none focus:ring-1 focus:ring-green-300"
+                onClick={() => setActive_chat(chat)}
+              >
+                <div className="ml-2 text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors duration-200">
+                  Chat {chats.length - index}
+                </div>
+              </button>
+            ))}
   </div>
 </div>
           </div>
@@ -276,25 +316,31 @@ const Chat = () => {
                     
                     
                     {messages.map((msg, index) => (
-                      <Msg key={msg._id} content={msg} 
+                      <Msg key={msg._id} content={msg} isloading={isLoading}
                       img={msg.img_url ? `http://localhost:8000${msg.img_url}` : null}  />
                     ))}
 
-                  
-                     
+                    <div ref={messagesEndRef} />
 
-                  
-                   
-
-                   
                     
-                    
-
-                   
-
+   
 
                   </div>
 
+                  {isLoading&&(<div className="flex flex-row items-center">
+                                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex-shrink-0 text-white font-bold shadow-md transform hover:scale-105 transition-transform duration-200">
+                                  AI
+                                </div>
+
+                              <div className="flex items-center space-x-2 p-2 mt-10">
+                                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-bounce"></div>
+                                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-bounce delay-150"></div>
+                                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-bounce delay-300"></div>
+                                </div>
+
+                          </div>
+)}
+                                
 
 
                   {pendingFile && (
@@ -370,7 +416,7 @@ const Chat = () => {
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path
                           strokeLinecap="round"
-                          strokeLinejoin="round"
+                          strokeLinejoin="round" 
                           strokeWidth="2"
                           d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         ></path>

@@ -1,6 +1,6 @@
 import socketio
 from socketio import ASGIApp
-from fastapi import FastAPI,HTTPException, Depends,UploadFile, File, Form
+from fastapi import FastAPI,HTTPException, Depends,UploadFile, File, Form,Path
 from fastapi.middleware.cors import CORSMiddleware
 from db import DB
 from services.Messages.message_services import message
@@ -14,15 +14,15 @@ from datetime import datetime
 import shutil  
 from fastapi.staticfiles import StaticFiles
 from Graph.Graph import Graph
-
+from services.llm_service import invoke_llm
 
 from services.Auth.modles import UserSigup,UserLogin,Token
 from services.Auth.auth import hash_pw,verify_pw,create_access_token,get_current_user
 
 from services.User.model import UserCreate,UserOut
 from services.User.UserServices import UserService
-
-
+from services.Chat.ChatServices import ChatServices
+from services.Chat.model import ChatCreate
 '''''
 sio = socketio.AsyncServer(
     cors_allowed_origins='*',
@@ -50,8 +50,7 @@ class AskRequest(BaseModel):
 @app.post('/ask')
 async def ask(req:AskRequest):
     print(req.message)
-    res = await message(req.message)
-    
+    res = invoke_llm(req.message)
     return  res
 
 
@@ -66,13 +65,18 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app.mount("/images", StaticFiles(directory=UPLOAD_DIR), name="images")
 
+
+#msgess
 @app.post('/ask_i')
 async def aski(
     msg:str = Form(...),
-    image:Optional[UploadFile] = File(None)
+    image:Optional[UploadFile] = File(None),
+    chat_id:str = Form(...)
 ):
+    
     req = AskRequest(message=msg)
     image_link=None
+    filepath = None
     if(image):
         print(image.filename)
         # Create a unique filename with timestamp
@@ -86,8 +90,8 @@ async def aski(
 
         image_link = f"/images/{filename}"
         print("Saved file:", filepath)
-
-    res = await message(req.message,filepath,image_link)
+   
+    res = await message(req.message,str(chat_id),filepath,image_link)
 
     return res    
 
@@ -96,7 +100,7 @@ async def aski(
 @app.post('/askg')
 async def askg(req:AskRequest):
     print(req.message)
-    res = invoke_graph(req.message)
+    res = (req.message)
     print(res)
     return res
 
@@ -111,13 +115,26 @@ async def askg(req:AskRequest):
     return res
 
 
-@app.get('/all_messages')
-async def gte_all(current_user: str = Depends(get_current_user)):
-    return await get_all_messages()
+@app.get('/all_messages/{cid}')
+async def gte_all(current_user: str = Depends(get_current_user),cid: str = Path(...)):
+    return await get_all_messages(cid)
+
+
+#chat
+chatser = ChatServices()
+@app.post('/create_chat')
+async def create_chat(chat:ChatCreate):
+    res = await chatser.create_chat(chat)
+    return res
+
+@app.get('/get_all_chats/{uid}')
+async def get_all_chats(uid: str = Path(...)):
+    res = await chatser.get_all_chats(uid)
+    return res
 
 
 
-
+#user
 
 
 us = UserService()
@@ -134,7 +151,7 @@ async def signup(user:UserSigup):
     return {"message": f"User created successfully{created_user}"}
 
 
-fake_users_db ={}
+
 @app.post("/login", response_model=Token)
 async def login(user: UserLogin):
     db_user = await us.getuser_by_email(user.email)
@@ -145,7 +162,8 @@ async def login(user: UserLogin):
     token = create_access_token(user.email)
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user_id":str(db_user['id'])
     }
 
 

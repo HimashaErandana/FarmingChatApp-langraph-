@@ -20,7 +20,14 @@ class WeatherAgent(BaseAgent):
 
     def call(self,q) -> Weather:
 
-        city = invoke_llm(f"from this qustion only exytract the name of the city and only retun it to me no other content {q}")
+        city = invoke_llm(f"""
+            Extract the name of the city from the following question. 
+            - Return **only the city name**. 
+            - Do not include any extra words, punctuation, or explanation. 
+            - If no city is mentioned, return "unknown".
+
+            Question: "{q}"
+            """)
         
         '''call llm here to extract the city and day using query'''
 

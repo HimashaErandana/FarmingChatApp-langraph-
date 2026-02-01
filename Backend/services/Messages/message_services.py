@@ -8,7 +8,7 @@ class Message_services:
         self.mongo_services = MongoDB_services()
 
 
-    async def message(self,msg,filepath:str=None,img_url:str=None):
+    async def message(self,msg,cid:str,filepath:str=None,img_url:str=None):
 
         print("msh services")
         
@@ -16,7 +16,8 @@ class Message_services:
         user_msg = MessageModel(
             message=msg,
             msgType="USER",
-            img_url=img_url
+            img_url=img_url,
+            chat_id=cid
         )
 
         if(user_msg):
@@ -26,11 +27,12 @@ class Message_services:
 
         print("did it ")
 
-        res = invoke_graph(msg,filepath)
+        res = invoke_graph(msg,cid,filepath)
 
         ai_msg = MessageModel(
             message=res,
-            msgType="AI"
+            msgType="AI",
+            chat_id=cid
         )
 
         crated = await self.mongo_services.create_msg(ai_msg)
@@ -38,8 +40,8 @@ class Message_services:
         print("ai msg",ai_msg)
         return [u_msg,ai_msg]
 
-    async def get_all(self):
-        messages = await self.mongo_services.get_all()
+    async def get_all(self,cid):
+        messages = await self.mongo_services.get_all(cid)
         return [
             {
                 "id": str(m.id),
@@ -53,10 +55,10 @@ class Message_services:
 
 message_services = Message_services()
 
-async def message(msg,filepath:str=None,img_url:str=None) -> str:
-    return await message_services.message(msg,filepath,img_url)
+async def message(msg,cid:str,filepath:str=None,img_url:str=None) -> str:
+    return await message_services.message(msg,cid,filepath,img_url)
 
 
-async def get_all_messages():
-    messages =  await message_services.get_all()
+async def get_all_messages(cid):
+    messages =  await message_services.get_all(cid)
     return messages

@@ -1,6 +1,7 @@
 from db import DB
-from model import ChatCreate,ChatOut
+from .model import ChatCreate,ChatOut
 from datetime import datetime,timezone
+from bson import ObjectId
 class ChatServices:
 
     def __init__(self):
@@ -11,7 +12,7 @@ class ChatServices:
 
 
         result = await self.chat_col.insert_one({
-            "userId": chat.userId,
+            "userId": ObjectId(chat.userId),
             "created_at":  datetime.now(timezone.utc)
         })
 
@@ -19,3 +20,16 @@ class ChatServices:
             "id": str(result.inserted_id),
             "userId": chat.userId
         }
+    
+    async def get_all_chats(self,id):
+        chats = []
+        try:
+            async for chat in self.chat_col.find({"userId":ObjectId(id)}):
+                chats.append(ChatOut(
+                    id=str(chat["_id"]),
+                    userId=str(chat["userId"])
+                ))
+        except():
+            print("error")
+        return chats
+ 

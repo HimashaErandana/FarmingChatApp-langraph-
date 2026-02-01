@@ -19,7 +19,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />  
           
           <Route
-            path="/Chat"
+            path="/Chat/:uid"
             element={
               <ProtectedRoute>
                 <Chat />
