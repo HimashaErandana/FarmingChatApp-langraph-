@@ -1,0 +1,25 @@
+# Virtual environments (ALL)
+venv/
+env/
+d_env/
+d_en_venv/
+venv_chroma/
+
+Backend/venv/
+Backend/env/
+Backend/d_env/
+Backend/d_en_venv/
+Backend/venv_chroma/
+
+# Python
+__pycache__/
+*.pyc
+
+# ML models
+*.keras
+*.h5
+*.pt
+*.pth
+# Environment / Secrets
+.env
+Backend/.env
